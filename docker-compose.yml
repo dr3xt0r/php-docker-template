@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  database:
+      image: postgres
+      healthcheck:
+          test:
+            [
+              "CMD",
+              "pg_isready",
+              "-q",
+              "-d",
+              "db",
+              "-U",
+              "${POSTGRES_USER}",
+              "-P",
+              "${POSTGRES_PASSWORD}"
+            ]
+          timeout: 45s
+          interval: 10s
+          retries: 10
+      environment:
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        POSTGRES_COLLATION: ${POSTGRES_COLLATION}
+      volumes:
+        - ./database/pgdata:/var/lib/postgresql/data
+        - ./database/init:/docker-entrypoint-initdb.d/
+      ports:
+        - "5432:5432"
+#PHP
+  php-fpm:
+    container_name: php-fpm 
+    build:
+      context: ./php-fpm
+    volumes:
+      - ./app:/www
+      - ./php-fpm/custom.ini:/usr/local/etc/php/conf.d/custom.ini
+  nginx:
+    container_name: nginx-container 
+    build:
+      context: ./nginx
+    volumes:
+      - ./nginx/:/etc/nginx
+      - ./app:/www
+    ports:
+      - "80:80"
+      # - "443:443"
+    links:
+      - php-fpm
+    depends_on:
+      - php-fpm
+
+
+
+        
